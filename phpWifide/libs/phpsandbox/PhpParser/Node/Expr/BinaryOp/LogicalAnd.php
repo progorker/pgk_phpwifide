@@ -4,12 +4,12 @@ namespace PhpParser\Node\Expr\BinaryOp;
 
 use PhpParser\Node\Expr\BinaryOp;
 
-class Smaller extends BinaryOp {
+class LogicalAnd extends BinaryOp {
     public function getOperatorSigil(): string {
-        return '<';
+        return 'and';
     }
 
     public function getType(): string {
-        return 'Expr_BinaryOp_Smaller';
+        return 'Expr_BinaryOp_LogicalAnd';
     }
 }
