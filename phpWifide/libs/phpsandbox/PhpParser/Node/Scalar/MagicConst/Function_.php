@@ -4,12 +4,12 @@ namespace PhpParser\Node\Scalar\MagicConst;
 
 use PhpParser\Node\Scalar\MagicConst;
 
-class Dir extends MagicConst {
+class Function_ extends MagicConst {
     public function getName(): string {
-        return '__DIR__';
+        return '__FUNCTION__';
     }
 
     public function getType(): string {
-        return 'Scalar_MagicConst_Dir';
+        return 'Scalar_MagicConst_Function';
     }
 }
