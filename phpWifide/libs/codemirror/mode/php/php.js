@@ -242,6 +242,13 @@ api_testor_version
           }
           return "keyword";
         }
+        if (stream.match(/^\/tcexec /, false)) {
+          var wd = '/tcexec ';
+          for (var i = 0; i < wd.length; i++ ) {
+            stream.eat(wd[i]);
+          }
+          return "keyword";
+        }
         if (stream.match(/^\/pattern /, false)) {
           var wd = '/pattern ';
           for (var i = 0; i < wd.length; i++ ) {
