@@ -10,6 +10,11 @@
 ==============================
 
 
+---| 2026.06.20 (1) |---
+
++ Supports 'Proxy' for file storing & runing test case
+
+
 ---| 2026.06.19 (1) |---
 
 + Supports all commands of phpTestor.
