@@ -60,30 +60,45 @@
  * ========================================================
  */
 
-global $g_config;
+set_time_limit(0);
 
-$g_config = array(
- 'mytestor.host' => 'localhost',
- 'mytestor.port' => '3306',
- 'mytestor.username' => 'mytestor',
- 'mytestor.password' => 'kunqhtsadzmopeh',
- 'mytestor.database' => 'mytestor',
- 'mytestor.command' => '/data/data/com.termux/files/usr/bin/mariadb',
- 'mytestor.zip_cmd' => '/data/data/com.termux/files/usr/bin/zip',
- 'mytestor.php_cmd' => '/data/data/com.termux/files/usr/bin/php',
- 'mytestor.unlock_password' => 'homosapien',
- 'mytestor.locking' => true,
- 'mytestor.buffers_dir' => '/data/data/com.termux/files/home/progorker/phpWifideProxy',
- 'mytestor.proxy_token' => 'homosapien',
- 'phptestor.dir' => '/phpTestor',
+global $g_config, $g_buffers_dir;
 
- 'svc.username' => 'mytestor',
- 'svc.password' => 'rzutomqahegpnyx',
- 
- 'testor.username' => 'mytestor',
- 'testor.password' => 'rzutomqahegpnyx'
- 
-);
+require_once __DIR__ . '/config.php';
 
-$g_config['phptestor.dir'] = __DIR__ . $g_config['phptestor.dir'];
+$g_buffers_dir = $g_config['mytestor.buffers_dir'];
+
+header( 'Content-Type: application/download' );
+
+function g_param( $key ) {
+  if ( isset( $_POST[ $key ] ) ) return $_POST[ $key ];
+  if ( isset( $_GET[ $key ] ) ) return $_GET[ $key ];
+  return '';
+}
+
+if ( trim( g_param('token') ) !== $g_config['mytestor.proxy_token'] ) {
+  exit;
+}
+
+$filename = g_param('f');
+$filename = trim( $filename );
+$filename = str_replace( '..', '', $filename );
+$filename = str_replace( '..', '', $filename );
+$filename = trim( $filename );
+$src_dir = $g_buffers_dir . '/' . $filename;
+if ( is_dir( $src_dir ) ) {
+  $zip_cmd = $g_config['mytestor.zip_cmd'];
+  $tmp_dir = $g_buffers_dir . '/tmp/' . uniqid();
+  @mkdir( $tmp_dir, 0777, true );
+  $code = substr( strrev( uniqid() ), 0, 4 );
+  $zip_dir = $tmp_dir . '/' . $code;
+  @mkdir( $zip_dir, 0777, true );
+  $cmd = "cp -rf $src_dir/* $zip_dir/";
+  @shell_exec( $cmd );
+  $zip_file = $code . '.zip';
+  $cmd = "cd $tmp_dir && $zip_cmd -r $zip_file $code";      
+  @shell_exec( $cmd );
+  $zip_file = $tmp_dir . '/' . $zip_file;
+  readfile( $zip_file );
+}
 ?>

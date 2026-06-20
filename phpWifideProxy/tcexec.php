@@ -60,30 +60,57 @@
  * ========================================================
  */
 
-global $g_config;
+set_time_limit(0);
 
-$g_config = array(
- 'mytestor.host' => 'localhost',
- 'mytestor.port' => '3306',
- 'mytestor.username' => 'mytestor',
- 'mytestor.password' => 'kunqhtsadzmopeh',
- 'mytestor.database' => 'mytestor',
- 'mytestor.command' => '/data/data/com.termux/files/usr/bin/mariadb',
- 'mytestor.zip_cmd' => '/data/data/com.termux/files/usr/bin/zip',
- 'mytestor.php_cmd' => '/data/data/com.termux/files/usr/bin/php',
- 'mytestor.unlock_password' => 'homosapien',
- 'mytestor.locking' => true,
- 'mytestor.buffers_dir' => '/data/data/com.termux/files/home/progorker/phpWifideProxy',
- 'mytestor.proxy_token' => 'homosapien',
- 'phptestor.dir' => '/phpTestor',
+global $g_config, $g_buffers_dir;
 
- 'svc.username' => 'mytestor',
- 'svc.password' => 'rzutomqahegpnyx',
- 
- 'testor.username' => 'mytestor',
- 'testor.password' => 'rzutomqahegpnyx'
- 
-);
+require_once __DIR__ . '/config.php';
 
-$g_config['phptestor.dir'] = __DIR__ . $g_config['phptestor.dir'];
+$g_buffers_dir = $g_config['mytestor.buffers_dir'];
+
+header( 'Content-Type: text/plain' );
+
+function g_param( $key ) {
+  if ( isset( $_POST[ $key ] ) ) return $_POST[ $key ];
+  if ( isset( $_GET[ $key ] ) ) return $_GET[ $key ];
+  return '';
+}
+
+if ( trim( g_param('token') ) !== $g_config['mytestor.proxy_token'] ) {
+  exit;
+}
+
+$filename = g_param('s');
+$filename = trim( $filename );
+$filename = str_replace( '..', '', $filename );
+$filename = str_replace( '..', '', $filename );
+$filename = trim( $filename );
+$phptestor_dir = $g_config['phptestor.dir'];
+$scrp_file = $g_buffers_dir . '/' . $filename;
+if ( is_file( $scrp_file ) ) {
+  $func = g_param('f');
+  $token = g_param('t');
+  $suite_id = g_param('i');
+  $prefix = <<<EOF
+<?php
+require_once '$phptestor_dir/testor.php';
+require_once '$scrp_file';
+
+global \$g_token, \$g_suite_id;
+
+\$g_token = '$token';
+\$g_suite_id = $suite_id;
+
+$func( '$token', $suite_id );
+?>
+EOF;
+  $tmp_dir = $g_buffers_dir . '/' . uniqid();
+  @mkdir( $tmp_dir, 0777, true );
+  $exec_file = $tmp_dir . '/' . uniqid() . '.php';
+  @file_put_contents( $exec_file, $prefix );
+  $php_cmd = $g_config['mytestor.php_cmd'];
+  $cmd = "$php_cmd $exec_file";
+  $rs = @shell_exec( $cmd );
+  echo $rs;
+}
 ?>

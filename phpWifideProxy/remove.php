@@ -60,30 +60,40 @@
  * ========================================================
  */
 
-global $g_config;
+set_time_limit(0);
 
-$g_config = array(
- 'mytestor.host' => 'localhost',
- 'mytestor.port' => '3306',
- 'mytestor.username' => 'mytestor',
- 'mytestor.password' => 'kunqhtsadzmopeh',
- 'mytestor.database' => 'mytestor',
- 'mytestor.command' => '/data/data/com.termux/files/usr/bin/mariadb',
- 'mytestor.zip_cmd' => '/data/data/com.termux/files/usr/bin/zip',
- 'mytestor.php_cmd' => '/data/data/com.termux/files/usr/bin/php',
- 'mytestor.unlock_password' => 'homosapien',
- 'mytestor.locking' => true,
- 'mytestor.buffers_dir' => '/data/data/com.termux/files/home/progorker/phpWifideProxy',
- 'mytestor.proxy_token' => 'homosapien',
- 'phptestor.dir' => '/phpTestor',
+global $g_config, $g_buffers_dir;
 
- 'svc.username' => 'mytestor',
- 'svc.password' => 'rzutomqahegpnyx',
- 
- 'testor.username' => 'mytestor',
- 'testor.password' => 'rzutomqahegpnyx'
- 
-);
+require_once __DIR__ . '/config.php';
 
-$g_config['phptestor.dir'] = __DIR__ . $g_config['phptestor.dir'];
+$g_buffers_dir = $g_config['mytestor.buffers_dir'];
+
+header( 'Content-Type: text/plain' );
+
+function g_param( $key ) {
+  if ( isset( $_POST[ $key ] ) ) return $_POST[ $key ];
+  if ( isset( $_GET[ $key ] ) ) return $_GET[ $key ];
+  return '';
+}
+
+if ( trim( g_param('token') ) !== $g_config['mytestor.proxy_token'] ) {
+  exit;
+}
+
+$filename = g_param('f');
+$filename = trim( $filename );
+$filename = str_replace( '..', '', $filename );
+$filename = str_replace( '..', '', $filename );
+$filename = trim( $filename );
+$kind = '';
+if ( is_dir( $g_buffers_dir . '/' . $filename ) ) {
+  $dir = $g_buffers_dir . '/' . $filename;
+  $cmd = "rm -rf $dir";
+  $kind = '[DIR]';
+  @shell_exec( $cmd );
+} else if ( is_file( $g_buffers_dir . '/' . $filename ) ) {
+  @unlink( $g_buffers_dir . '/' . $filename );
+  $kind = '[FILE]';
+}
+echo $kind;
 ?>
