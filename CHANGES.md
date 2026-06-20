@@ -12,7 +12,7 @@
 
 ---| 2026.06.20 (1) |---
 
-+ Supports 'Proxy' for file storing & runing test case
++ Supports 'Proxy' for file storing & running test case
 
 
 ---| 2026.06.19 (1) |---
