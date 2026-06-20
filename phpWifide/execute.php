@@ -88,6 +88,7 @@ command\tdescription
 //username\tSet Testor's username. It is executed in client side.
 //password\tSet Testor's password. It is executed in client side.
 //suite\tSet test suite code. It is executed in client side.
+//tcexec\tTrigger to run unit test case via proxy. Arguments are 'script_path', 'func_name'.
 EOT;
   $rs = '';
   g_phpwifide_parse_results( $text, $rs );
@@ -285,7 +286,7 @@ function g_phpwifide_load_cat( $sql ) {
 }
 
 function g_phpwifide_load_load( $sql ) {
-  global $g_buffer_dir, $g_load_text;
+  global $g_config, $g_buffer_dir, $g_load_text;
   
   $nsql = '';
   $start = 0;
@@ -314,7 +315,15 @@ function g_phpwifide_load_load( $sql ) {
     $filename = str_replace( '..', '', $filename );
     $filename = str_replace( '..', '', $filename );
     $filename = trim( $filename );
-    $cat = trim( @file_get_contents( $g_buffer_dir . '/' . $filename ) );
+    $proxy_url = $g_config['mytestor.proxy_url'];
+    $proxy_token = $g_config['mytestor.proxy_token'];
+    if ( strlen( $proxy_url ) > 0 ) {
+      $load_url = "$proxy_url". "load.php?token=$proxy_token&f=$filename";
+      $cat = @file_get_contents( $load_url );
+      if ( $cat === null ) $cat = '';
+    } else {
+      $cat = trim( @file_get_contents( $g_buffer_dir . '/' . $filename ) );
+    }
     if ( $cat !== '' ) {
       $g_load_text = "\n// loading //\n" . $cat;
       return '';
@@ -330,7 +339,7 @@ function g_phpwifide_load_load( $sql ) {
 }
 
 function g_phpwifide_load_list( $sql ) {
-  global $g_buffer_dir, $g_list_text;
+  global $g_config, $g_buffer_dir, $g_list_text;
   
   $has_list = false;
   $nsql = '';
@@ -356,14 +365,26 @@ function g_phpwifide_load_list( $sql ) {
       $filename = substr( $sql, $idx + $sz );
       $start = strlen( $sql );
     }
-    $filename = trim( $filename );
-    $filename = str_replace( '..', '', $filename );
-    $filename = str_replace( '..', '', $filename );
-    $filename = trim( $filename );
-    $cmd = "ls -1 " . $g_buffer_dir . '/' . $filename;
-    $dir = dirname( $g_buffer_dir . '/' . $filename );
-    @mkdir( $dir, 0777, true );
-    $cat = trim( @shell_exec( $cmd ) . '' );
+    $proxy_url = $g_config['mytestor.proxy_url'];
+    $proxy_token = $g_config['mytestor.proxy_token'];
+    if ( strlen( $proxy_url ) > 0 ) {
+      $filename = trim( $filename );
+      $filename = str_replace( '..', '', $filename );
+      $filename = str_replace( '..', '', $filename );
+      $filename = trim( $filename );
+      $list_url = "$proxy_url". "list.php?token=$proxy_token&f=$filename";
+      $cat = @file_get_contents( $list_url );
+      if ( $cat === null ) $cat = '';
+    } else {
+      $filename = trim( $filename );
+      $filename = str_replace( '..', '', $filename );
+      $filename = str_replace( '..', '', $filename );
+      $filename = trim( $filename );
+      $cmd = "ls -1 " . $g_buffer_dir . '/' . $filename;
+      $dir = dirname( $g_buffer_dir . '/' . $filename );
+      @mkdir( $dir, 0777, true );
+      $cat = trim( @shell_exec( $cmd ) . '' );
+    }
     if ( $cat === '' ) {
       $cat = '__BLANK__';
     }
@@ -388,7 +409,7 @@ function g_phpwifide_load_list( $sql ) {
 }
 
 function g_phpwifide_load_remove( $sql ) {
-  global $g_buffer_dir, $g_remove_text;
+  global $g_config, $g_buffer_dir, $g_remove_text;
   
   $nsql = '';
   $start = 0;
@@ -418,14 +439,23 @@ function g_phpwifide_load_remove( $sql ) {
     $filename = str_replace( '..', '', $filename );
     $filename = trim( $filename );
     $kind = '';
-    if ( is_dir( $g_buffer_dir . '/' . $filename ) ) {
-      $dir = $g_buffer_dir . '/' . $filename;
-      $cmd = "rm -rf $dir";
-      $kind = '[DIR]';
-      @shell_exec( $cmd );
-    } else if ( is_file( $g_buffer_dir . '/' . $filename ) ) {
-      @unlink( $g_buffer_dir . '/' . $filename );
-      $kind = '[FILE]';
+    $proxy_url = $g_config['mytestor.proxy_url'];
+    $proxy_token = $g_config['mytestor.proxy_token'];
+    if ( strlen( $proxy_url ) > 0 ) {
+      $remove_url = "$proxy_url". "remove.php?token=$proxy_token&f=$filename";
+      $cat = @file_get_contents( $remove_url );
+      if ( $cat === null ) $cat = '';
+      $kind = $cat;
+    } else {
+      if ( is_dir( $g_buffer_dir . '/' . $filename ) ) {
+        $dir = $g_buffer_dir . '/' . $filename;
+        $cmd = "rm -rf $dir";
+        $kind = '[DIR]';
+        @shell_exec( $cmd );
+      } else if ( is_file( $g_buffer_dir . '/' . $filename ) ) {
+        @unlink( $g_buffer_dir . '/' . $filename );
+        $kind = '[FILE]';
+      }
     }
     $cat = "$kind Remove" . "\n" . $filename;
     $rs = '';
@@ -439,6 +469,54 @@ function g_phpwifide_load_remove( $sql ) {
   if ( count( $rets['idxl'] ) > 0 ) {
     $nsql = g_phpwifide_load_remove( $nsql );
   }
+  return $nsql;
+}
+
+function g_phpwifide_load_tcexec( $sql ) {
+  global $g_config, $g_buffer_dir, $g_tcexec_text;
+
+  $nsql = '';
+  $start = 0;
+  $finds = [' //tcexec ', "\n".'//tcexec ' ];
+  $finds_2 = [';', "\n", "\r"];
+  $rets = g_phpwifide_finds( $finds, $sql, $start );
+  while ( count( $rets['idxl'] ) > 0 ) {
+    $pidx = $rets['pidx'];
+    $key = $rets['kyl'][$pidx];
+    $idx = $rets['idxl'][$pidx];
+    $sz = $rets['szl'][$pidx];
+    $nsql .= substr( $sql, $start, $idx - $start );
+    $rets_2 = g_phpwifide_finds( $finds_2, $sql, $idx + $sz );
+    $pidx_2 = $rets_2['pidx'];
+    if ( count( $rets_2['idxl'] ) > 0 ) {
+      $filename = substr( $sql, $idx + $sz, $rets_2['idxl'][$pidx_2] - $idx - $sz);
+      $start = $rets_2['idxl'][$pidx_2] + $rets_2['szl'][$pidx_2];
+      if ( $rets_2['kyl'][$pidx_2] == "\n" ) {
+        $start -= 1;
+      }
+    } else {
+      $filename = substr( $sql, $idx + $sz );
+      $start = strlen( $sql );
+    }
+    $filename = trim( $filename );
+    $fields = explode( " ", $filename );
+    if ( count( $fields ) >= 2 ) {
+      $filename = $fields[0];
+      $filename = trim( $filename );
+      $filename = str_replace( '..', '', $filename );
+      $filename = str_replace( '..', '', $filename );
+      $filename = trim( $filename );
+      $func = $fields[1];
+      $proxy_url = $g_config['mytestor.proxy_url'];
+      $proxy_token = $g_config['mytestor.proxy_token'];
+      if ( strlen( $proxy_url ) > 0 ) {
+        $cmd = "\ng_phpwifide_tcexec('$filename', '$func', " . '$' . 'g_token' . ", " . '$' . 'g_suite_id' . ");\n";
+        $nsql .= $cmd;
+      }
+    }
+    $rets = g_phpwifide_finds( $finds, $sql, $start );
+  }
+  $nsql .= substr( $sql, $start );
   return $nsql;
 }
 
@@ -474,23 +552,18 @@ function g_phpwifide_load_download( $sql ) {
     $filename = str_replace( '..', '', $filename );
     $filename = str_replace( '..', '', $filename );
     $filename = trim( $filename );
-    $src_dir = $g_buffer_dir . '/' . $filename;
-    if ( is_dir( $src_dir ) ) {
-      $tmp_dir = __DIR__ . '/tmp/' . uniqid();
-      @mkdir( $tmp_dir, 0777, true );
+    $proxy_url = $g_config['mytestor.proxy_url'];
+    $proxy_token = $g_config['mytestor.proxy_token'];
+    if ( strlen( $proxy_url ) > 0 ) {
       $code = substr( strrev( uniqid() ), 0, 4 );
-      $zip_dir = $tmp_dir . '/' . $code;
-      @mkdir( $zip_dir, 0777, true );
-      $cmd = "cp -rf $src_dir/* $zip_dir/";
-      @shell_exec( $cmd );
-      $zip_file = $code . '.zip';
-      $cmd = "cd $tmp_dir && $zip_cmd -r $zip_file $code";      
-      @shell_exec( $cmd );
-      $zip_file = $tmp_dir . '/' . $zip_file;
       $dl_dir = __DIR__ . '/downloads';
       @mkdir( $dl_dir, 0777, true );
-      $cmd = "cp -f $zip_file $dl_dir/";
-      @shell_exec( $cmd );
+      $zip_file = $dl_dir . '/' . $code . '.zip';
+
+      $download_url = "$proxy_url". "download.php?token=$proxy_token&f=$filename";
+      $data = @file_get_contents( $download_url );
+      @file_put_contents( $zip_file, $data );
+
       $zip_file = $code . '.zip';
       $uri = $_SERVER['REQUEST_URI'];
       $idx = strrpos( $uri, '/' );
@@ -503,8 +576,39 @@ function g_phpwifide_load_download( $sql ) {
       $rs = '';
       g_phpwifide_parse_results( $cat, $rs );
       $g_download_text .= "\n" . $rs . "\n";
-      $cmd = "rm -rf $tmp_dir";
-      @shell_exec( $cmd );
+    } else {
+      $src_dir = $g_buffer_dir . '/' . $filename;
+      if ( is_dir( $src_dir ) ) {
+        $tmp_dir = __DIR__ . '/tmp/' . uniqid();
+        @mkdir( $tmp_dir, 0777, true );
+        $code = substr( strrev( uniqid() ), 0, 4 );
+        $zip_dir = $tmp_dir . '/' . $code;
+        @mkdir( $zip_dir, 0777, true );
+        $cmd = "cp -rf $src_dir/* $zip_dir/";
+        @shell_exec( $cmd );
+        $zip_file = $code . '.zip';
+        $cmd = "cd $tmp_dir && $zip_cmd -r $zip_file $code";      
+        @shell_exec( $cmd );
+        $zip_file = $tmp_dir . '/' . $zip_file;
+        $dl_dir = __DIR__ . '/downloads';
+        @mkdir( $dl_dir, 0777, true );
+        $cmd = "cp -f $zip_file $dl_dir/";
+        @shell_exec( $cmd );
+        $zip_file = $code . '.zip';
+        $uri = $_SERVER['REQUEST_URI'];
+        $idx = strrpos( $uri, '/' );
+        if ( $idx !== false ) {
+          $uri = substr( $uri, 0, $idx );
+        }
+        $protocol = ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] === 'on' ) ? 'https' : 'http';
+        $dl_url = $protocol . '://' . $_SERVER['HTTP_HOST'] . $uri . '/downloads/' . $zip_file;
+        $cat = "[ Download ] " . $filename . "\n" . $dl_url;
+        $rs = '';
+        g_phpwifide_parse_results( $cat, $rs );
+        $g_download_text .= "\n" . $rs . "\n";
+        $cmd = "rm -rf $tmp_dir";
+        @shell_exec( $cmd );
+      }
     }
     $nsql .= "\n// loaddownload //\n";
     $rets = g_phpwifide_finds( $finds, $sql, $start );
@@ -568,7 +672,7 @@ function g_phpwifide_load_workdir( $sql ) {
 }
 
 function g_phpwifide_load_save( $sql ) {
-  global $g_buffer_dir;
+  global $g_config, $g_buffer_dir;
   
   $has_save = false;
   $nsql = '';
@@ -603,6 +707,23 @@ function g_phpwifide_load_save( $sql ) {
       $dir = @dirname( $g_buffer_dir . '/' . $filename ) . '';
       @mkdir( $dir, 0777, true );
       @file_put_contents( $g_buffer_dir . '/' . $filename, "\n" . trim( $nsql ) . "\n" );
+      $has_save = true;
+    }
+    $proxy_url = $g_config['mytestor.proxy_url'];
+    $proxy_token = $g_config['mytestor.proxy_token'];
+    if ( strlen( $proxy_url ) > 0 ) {
+      $tmp_dir = __DIR__ . '/tmp/' . uniqid();
+      @mkdir( $tmp_dir, 0777, true );
+      $save_file = $tmp_dir . '/' . uniqid() . '.file';
+      @file_put_contents( $save_file, "\n" . trim( $nsql ) . "\n" );
+      $curl_cmd = $g_config['mytestor.curl_cmd'];
+      $fn = str_replace( '.', '__d__', $filename );
+      $fn = str_replace( '/', '__s__', $fn );
+      $upload_url = "$proxy_url". "save.php?token=$proxy_token&name=$fn";
+      $cmd = "$curl_cmd -F " . '"' . "file=@$save_file" . '"' . " " . '"' . $upload_url . '"';
+      @shell_exec( $cmd );
+      $cmd = "rm -rf $tmp_dir";
+      @shell_exec( $cmd );
       $has_save = true;
     }
     $rets = g_phpwifide_finds( $finds, $sql, $start );
@@ -728,6 +849,7 @@ function g_phpwifide_refine( $sql ) {
     $sql = g_phpwifide_load_remove( "\n" . $sql . "\n" );
     $sql = g_phpwifide_load_download( "\n" . $sql . "\n" );
     $sql = g_phpwifide_load_load( "\n" . $sql . "\n" );
+    $sql = g_phpwifide_load_tcexec( "\n" . $sql . "\n" );
     $sql = g_phpwifide_load_help( "\n" . $sql . "\n" );
   }
 
@@ -806,8 +928,25 @@ function g_phpwifide_parse_results( $text, &$p_results ) {
   }
 }
 
+function g_phpwifide_tcexec( $filename, $func, $token, $suite_id ) {
+  global $g_config;
+  $proxy_url = $g_config['mytestor.proxy_url'];
+  $proxy_token = $g_config['mytestor.proxy_token'];
+  if ( strlen( $proxy_url ) > 0 ) {
+    $filename = trim( $filename );
+    $filename = str_replace( '..', '', $filename );
+    $filename = str_replace( '..', '', $filename );
+    $filename = trim( $filename );
+    $tcexec_url = "$proxy_url". "tcexec.php?token=$proxy_token&s=$filename&f=$func&t=$token&i=$suite_id";
+    $cat = @file_get_contents( $tcexec_url );
+    if ( $cat === null ) $cat = '';
+    echo $cat;
+  }
+}
+
 function g_phpwifide__valid_funcs( $func ) {
   $supported = [
+"g_phpwifide_tcexec",
 "g_phpwifide_init",
 "g_phpwifide_vars",
 "phptestor\\api_testor_escape",
@@ -882,6 +1021,7 @@ function g_phpwifide__invalid_funcs( $func ) {
 'g_phpwifide_load_save',
 'g_phpwifide_load_pattern',
 'g_phpwifide_load_source',
+'g_phpwifide_loadtcexec',
 'g_phpwifide_refine',
 'g_phpwifide_fill_table',
 'g_phpwifide_parse_results'

@@ -62,6 +62,10 @@
 
 set_time_limit(0);
 
+global $g_config;
+
+require_once __DIR__ . '/config.php';
+
 header( 'Content-Type: text/plain' );
 
 function g_escape( $sql ) {
@@ -137,9 +141,14 @@ if ( strtolower( $_SERVER['REQUEST_METHOD'] ) === 'post' ) {
     if ( $fileext === 'zip' ) {
       $tmp_dir = __DIR__ . '/tmp/' . uniqid();
       @mkdir( $tmp_dir, 0777, true );
+      $tmp_dir_2 = __DIR__ . '/tmp/' . uniqid();
+      @mkdir( $tmp_dir_2, 0777, true );
       $zip_file = $tmp_dir . '/' . $filename;
+      $zip_file_2 = $tmp_dir_2 . '/' . $filename;
       if ( move_uploaded_file( $tmp_file, $zip_file ) ) {
         $code = g_ucode();
+        $cmd = "cp -f $zip_file $zip_file_2";
+        @shell_exec( $cmd );
         $cmd = "cd $tmp_dir && unzip $filename";
         @shell_exec( $cmd );
         @unlink( $zip_file );
@@ -152,6 +161,14 @@ if ( strtolower( $_SERVER['REQUEST_METHOD'] ) === 'post' ) {
             $tag_dir = __DIR__ . '/buffers/' . $code;
             @mkdir( $tag_dir, 0777, true );
             copy_folder( $src_dir, $tag_dir );
+            $proxy_url = $g_config['mytestor.proxy_url'];
+            $proxy_token = $g_config['mytestor.proxy_token'];
+            if ( strlen( $proxy_url ) > 0 ) {
+              $curl_cmd = $g_config['mytestor.curl_cmd'];
+              $upload_url = "$proxy_url". "upload.php?token=$proxy_token&code=$code";
+              $cmd = "$curl_cmd -F " . '"' . "zip=@$zip_file_2" . '"' . " $upload_url";
+              @shell_exec( $cmd );
+            }
             echo "\n", "[ $filename ] file is uploaded to __BUFFER_DIR__/$code folder!", "\n";
           } else {
             echo "\n", "Failed to unzip [ $filename ] file!", "\n";
@@ -163,6 +180,8 @@ if ( strtolower( $_SERVER['REQUEST_METHOD'] ) === 'post' ) {
         echo "\n", "Failed to upload [ $filename ] file!", "\n";
       }
       $cmd = "rm -rf $tmp_dir";
+      @shell_exec( $cmd );
+      $cmd = "rm -rf $tmp_dir_2";
       @shell_exec( $cmd );
     } else {
       echo "\n", "[$fileext] file is not supported!", "\n";

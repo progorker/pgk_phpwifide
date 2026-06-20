@@ -71,6 +71,7 @@ $g_config = array(
  'mytestor.command' => '/data/data/com.termux/files/usr/bin/mariadb',
  'mytestor.zip_cmd' => '/data/data/com.termux/files/usr/bin/zip',
  'mytestor.php_cmd' => '/data/data/com.termux/files/usr/bin/php',
+ 'mytestor.curl_cmd' => '/data/data/com.termux/files/usr/bin/curl',
  'mytestor.unlock_password' => 'homosapien',
  'mytestor.locking' => true,
 
@@ -78,7 +79,10 @@ $g_config = array(
  'svc.password' => 'rzutomqahegpnyx',
  
  'testor.username' => 'mytestor',
- 'testor.password' => 'rzutomqahegpnyx'
+ 'testor.password' => 'rzutomqahegpnyx',
+
+ 'mytestor.proxy_token' => 'homosapien',
+ 'mytestor.proxy_url' => 'http://localhost:8080/phpWifideProxy/'
  
 );
 ?>
