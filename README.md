@@ -52,6 +52,7 @@ phpWifide is ready to use on Testor Gifts such as:
 | //username | Set Testor's username. It is executed in client side.                                       |
 | //password | Set Testor's password. It is executed in client side.                                       |
 | //suite    | Set test suite code. It is executed in client side.                                         |
+| //tcexec   | Trigger to run unit test case via proxy. Arguments are 'script_path', 'func_name'.          |
 +------------+---------------------------------------------------------------------------------------------+
 
 
