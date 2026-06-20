@@ -13,6 +13,7 @@
 ---| 2026.06.20 (1) |---
 
 + Supports 'Proxy' for file storing & running test case
++ Release: phpWifide v.0.0.2
 
 
 ---| 2026.06.19 (1) |---
