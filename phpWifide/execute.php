@@ -740,7 +740,7 @@ function g_phpwifide_load_save( $sql ) {
 }
 
 function g_phpwifide_load_pattern( $sql ) {
-  global $g_buffer_dir;
+  global $g_buffer_dir, $g_config;
   
   $nsql = '';
   $start = 0;
@@ -783,6 +783,23 @@ function g_phpwifide_load_pattern( $sql ) {
         @mkdir( $dir, 0777, true );
         $pattern = "\n" . trim( g_phpwifide_pattern( $module, $kind, $code, $variant ) ) . "\n";
         @file_put_contents( $g_buffer_dir . '/' . $filename, $pattern );
+        $proxy_url = $g_config['mytestor.proxy_url'];
+        $proxy_token = $g_config['mytestor.proxy_token'];
+        if ( strlen( $proxy_url ) > 0 ) {
+          $tmp_dir = __DIR__ . '/tmp/' . uniqid();
+          @mkdir( $tmp_dir, 0777, true );
+          $save_file = $tmp_dir . '/' . uniqid() . '.file';
+          @file_put_contents( $save_file, "\n" . trim( $pattern ) . "\n" );
+          $curl_cmd = $g_config['mytestor.curl_cmd'];
+          $fn = str_replace( '.', '__d__', $filename );
+          $fn = str_replace( '/', '__s__', $fn );
+          $upload_url = "$proxy_url". "save.php?token=$proxy_token&name=$fn";
+          $cmd = "$curl_cmd -F " . '"' . "file=@$save_file" . '"' . " " . '"' . $upload_url . '"';
+          @shell_exec( $cmd );
+          $cmd = "rm -rf $tmp_dir";
+          @shell_exec( $cmd );
+        }
+
       } 
     }
     $rets = g_phpwifide_finds( $finds, $sql, $start );
