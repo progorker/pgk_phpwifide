@@ -629,12 +629,14 @@ function api_testor_startup() {
     exit();
   } );
 
+/*
   if ( $g_clear_version ) {
     $data = null;
     \phptestor\api_testor_option( $g_token, $g_suite_id, $data, 'ver:cur', true );
   }
   \phptestor\api_testor_version( $g_token, $g_suite_id, $g_last_version );
   \phptestor\api_testor_option( $g_token, $g_suite_id, $g_src_dir, 'src_dir', false );
+*/
 }
 
 // Procedure: 38.
