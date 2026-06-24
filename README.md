@@ -98,3 +98,5 @@ phpWifide is ready to use on Testor Gifts such as:
 
 [![How to install phpWifide w/ demo account? (Part 1)](https://github.com/progorker/pgk_phpwifide/blob/main/AZhKLcBNfoc-SD.jpg?raw=true)](https://www.youtube.com/watch?v=AZhKLcBNfoc)
 
+[![How to install phpWifide w/ demo account? (Part 2)](https://github.com/progorker/pgk_phpwifide/blob/main/WOXcpllVlig-SD.jpg?raw=true)](https://www.youtube.com/watch?v=WOXcpllVlig)
+
